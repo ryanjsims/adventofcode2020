@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <algorithm>
 
 int main(int argc, char** argv){
     std::ifstream input;
@@ -7,7 +9,7 @@ int main(int argc, char** argv){
 
     std::string line;
     std::getline(input, line);
-    int max = 0;
+    std::vector<int> seat_ids;
     while(input.good()){
         int seat_id = 0;
         for(int i = 0; i < line.size(); i++){
@@ -16,13 +18,14 @@ int main(int argc, char** argv){
                 seat_id += 1;
             }
         }
-        if(seat_id > 1023)
-            std::cout << line << " " << seat_id << std::endl;
-        if(seat_id > max){
-            max = seat_id;
-        }
+        seat_ids.push_back(seat_id);
         std::getline(input, line);
     }
-    std::cout << max << std::endl;
+    std::sort(seat_ids.begin(), seat_ids.end());
+    for(int i = 0; i < seat_ids.size() - 1; i++){
+        if(seat_ids[i] != seat_ids[i + 1] - 1){
+            std::cout << seat_ids[i] + 1 << std::endl;
+        }
+    }
     return 0;
 }
