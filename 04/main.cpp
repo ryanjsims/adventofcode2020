@@ -18,7 +18,63 @@ public:
     }
 
     bool valid(){
-        return info.size() == 8 || (info.size() == 7 && info.count("cid") == 0);
+        bool valid = info.size() == 8 || (info.size() == 7 && info.count("cid") == 0);
+        if(valid){
+            valid &= validate_year("byr", 1920, 2002);
+            valid &= validate_year("iyr", 2010, 2020);
+            valid &= validate_year("eyr", 2020, 2030);
+            valid &= validate_height();
+            valid &= validate_eyes();
+            valid &= validate_hair();
+            valid &= validate_pid();
+        }
+        return valid;
+    }
+
+    bool validate_year(std::string key, int minimum, int maximum){
+        int year = std::stoi(info[key]);
+        return info[key].size() == 4 && year >= minimum && year <= maximum;
+    }
+
+    bool validate_height(){
+        if(info["hgt"].size() < 4)
+            return false;
+        std::string units = info["hgt"].substr(info["hgt"].size() - 2);
+        if(units != "cm" && units != "in"){
+            return false;
+        }
+        int value = std::stoi(info["hgt"].substr(0, info["hgt"].size() - 2));
+        if(units == "cm"){
+            return value >= 150 && value <= 193;
+        }
+        else if(units == "in"){
+            return value >= 59 && value <= 76;
+        }
+        return false;
+    }
+
+    bool validate_hair(){
+        if(info["hcl"][0] != '#' || info["hcl"].size() != 7)
+            return false;
+        for(int i = 1; i < info["hcl"].size(); i++){
+            if(!(info["hcl"][i] >= 'a' && info["hcl"][i] <= 'f' || info["hcl"][i] >= '0' && info["hcl"][i] <= '9'))
+                return false;
+        }
+        return true;
+    }
+
+    bool validate_eyes(){
+        std::string valid_colors[7] = {"amb", "blu", "brn", "gry", "grn", "hzl", "oth"};
+        for(int i = 0; i < 7; i++){
+            if(info["ecl"] == valid_colors[i]){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool validate_pid(){
+        return info["pid"].size() == 9;
     }
 
     void print(){
@@ -44,7 +100,6 @@ int main(int argc, char** argv){
             Passport p(tokens);
             if(p.valid()){
                 valid++;
-                p.print();
             }
             tokens.clear();
             std::getline(input, line);
@@ -62,7 +117,6 @@ int main(int argc, char** argv){
     Passport p(tokens);
     if(p.valid()){
         valid++;
-        p.print();
     }
     std::cout << "There were " << valid << " valid passports" << std::endl;
     return 0;
