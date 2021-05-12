@@ -41,28 +41,12 @@ public:
             address++;
         } else if(instruction.first == "jmp"){
             if(speculate){
-                std::cout << "SPECULATING AT ADDRESS " << address << "..." << std::endl; //address << "\t" << accumulator << "\t" << code[address] << "  \tWould make address " << address + 1 << " as nop" << std::endl;
-                int addr = address, acc = accumulator;
-                std::unordered_map<int, int> old_times = times_run;
-                address++;
-                while(step(true, false));
-                std::cout << "FINISHED SPECULATING" << std::endl;
-                address = addr;
-                accumulator = acc;
-                times_run = old_times;
+                this->speculate(instruction);
             }
             address += instruction.second;
         } else if(instruction.first == "nop"){
             if(speculate){
-                std::cout << "SPECULATING AT ADDRESS " << address << "..." << std::endl; //address << "\t" << accumulator << "\t" << code[address] << "  \tWould make address " << address + 1 << " as nop" << std::endl;
-                int addr = address, acc = accumulator;
-                std::unordered_map<int, int> old_times = times_run;
-                address += instruction.second;
-                while(step(true, false));
-                std::cout << "FINISHED SPECULATING" << std::endl;
-                address = addr;
-                accumulator = acc;
-                times_run = old_times;
+                this->speculate(instruction);
             }
             address++;
         } else {
@@ -80,6 +64,21 @@ public:
 
     void run(bool speculate=false){
         while(step(true, speculate));
+    }
+
+    void speculate(std::pair<std::string, int> instruction){
+        std::cout << "SPECULATING AT ADDRESS " << address << "..." << std::endl; //address << "\t" << accumulator << "\t" << code[address] << "  \tWould make address " << address + 1 << " as nop" << std::endl;
+        int addr = address, acc = accumulator;
+        std::unordered_map<int, int> old_times = times_run;
+        if(instruction.first == "nop")
+            address += instruction.second;
+        else
+            address++;
+        while(step(true, false));
+        std::cout << "FINISHED SPECULATING" << std::endl;
+        address = addr;
+        accumulator = acc;
+        times_run = old_times;
     }
 };
 
