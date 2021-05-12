@@ -109,11 +109,11 @@ int main(){
                 if((*current)[r][c] == Seating::FLOOR){
                     continue;
                 }
-                int occupied = count_occupied(*current, r, c);
+                int occupied = raycast_occupied(*current, r, c);
                 if((*current)[r][c] == Seating::EMPTY && occupied == 0){
                     (*output)[r][c] = Seating::OCCUPIED;
                     changes++;
-                } else if((*current)[r][c] == Seating::OCCUPIED && occupied >= 4){
+                } else if((*current)[r][c] == Seating::OCCUPIED && occupied >= 5){
                     (*output)[r][c] = Seating::EMPTY;
                     changes++;
                 } else {
