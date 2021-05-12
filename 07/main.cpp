@@ -84,6 +84,14 @@ void print_contained_tree(Bag* bag, int level, std::unordered_set<int>& containi
     }
 }
 
+int get_number_contained_in(Bag* bag){
+    int amount = 1;
+    for(int i = 0; i < bag->contains.size(); i++){
+        amount += bag->contains[i].amount * get_number_contained_in(bag->contains[i].containee);
+    }
+    return amount;
+}
+
 int main(){
     std::ifstream input;
     input.open("input.txt", std::ifstream::in);
@@ -101,6 +109,7 @@ int main(){
     Bag* curr = bags[bag_names_to_ids["shiny gold bags"]];
     std::unordered_set<int> containing_ids;
     print_contained_tree(curr, 0, containing_ids);
-    std::cout << containing_ids.size() << " possible containers" << std::endl;;
+    std::cout << containing_ids.size() << " possible containers" << std::endl;
+    std::cout << get_number_contained_in(curr) - 1 << " other bags in this bag" << std::endl;
     return 0;
 }
