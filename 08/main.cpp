@@ -24,13 +24,12 @@ public:
         if(times_run.find(address) == times_run.end()){
             times_run.emplace(address, 0);
         } else if(stop_on_loop) {
-            std::cout << address << "\t" << accumulator << "\t" << code[address] << std::endl;
             std::cout << "Accumulator was " << accumulator << " before looping" << std::endl;
             return false;
         }
         if(address == code.size()){
             std::cout << "Accumulator was " << accumulator << " before halting" << std::endl;
-            exit(0);
+            return false;
         }
 
         times_run[address] += 1;
@@ -87,6 +86,6 @@ int main(){
     input.open("input.txt", std::ifstream::in);
 
     HandheldEmu emu(std::move(input));
-    emu.run();
+    emu.run(true);
     return 0;
 }
