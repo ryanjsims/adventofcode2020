@@ -14,6 +14,7 @@ int main(){
     input.open("input.txt", std::ifstream::in);
 
     int x = 0, y = 0, direction = 0;
+    int wx = 10, wy = 1, nwx;
     int commands_followed = 0;
     std::string line;
     std::getline(input, line);
@@ -21,55 +22,53 @@ int main(){
         action movement = parse(line);
         switch(movement.first){
         case 'N':
-            y += movement.second;
-            //std::cout << "Moved north " << movement.second << " units" << std::endl;
+            wy += movement.second;
+            //std::cout << "Moved waypoint north " << movement.second << " units" << std::endl;
             break;
         case 'E':
-            x += movement.second;
-            //std::cout << "Moved east  " << movement.second << " units" << std::endl;
+            wx += movement.second;
+            //std::cout << "Moved waypoint east  " << movement.second << " units" << std::endl;
             break;
         case 'S':
-            y -= movement.second;
-            //std::cout << "Moved south " << movement.second << " units" << std::endl;
+            wy -= movement.second;
+            //std::cout << "Moved waypoint south " << movement.second << " units" << std::endl;
             break;
         case 'W':
-            x -= movement.second;
-            //std::cout << "Moved west  " << movement.second << " units" << std::endl;
+            wx -= movement.second;
+            //std::cout << "Moved waypoint west  " << movement.second << " units" << std::endl;
             break;
         case 'F':
-            //std::cout << "Moved forward " << movement.second << " units facing ";
-            switch(direction){
-                case 0:
-                    //std::cout << "east" << std::endl;
-                    x += movement.second;
-                    break;
-                case 90:
-                    //std::cout << "north" << std::endl;
-                    y += movement.second;
-                    break;
-                case 180:
-                    //std::cout << "west" << std::endl;
-                    x -= movement.second;
-                    break;
-                case 270:
-                    //std::cout << "south" << std::endl;
-                    y -= movement.second;
-                    break;
-            }
-            break;
-        case 'L':
-            direction += movement.second;
-            direction %= 360;
-            //std::cout << "Turned left " << movement.second << " degrees" << std::endl;
+            //std::cout << "Moved to waypoint " << movement.second << " times" << std::endl;
+            x += wx * movement.second;
+            y += wy * movement.second;
             break;
         case 'R':
-            direction -= movement.second;
-            if(direction < 0)
-                direction += 360;
-            //std::cout << "Turned right " << movement.second << " degrees" << std::endl;
+            movement.second = movement.second * -1 + 360;
+        case 'L':
+            //std::cout << "Rotating waypoint by " << movement.second << " degrees from " << wx << ", " << wy;
+            switch (movement.second)
+            {
+            case 90:
+                nwx = -wy;
+                wy = wx;
+                wx = nwx;
+                break;
+            case 180:
+                wx = -wx;
+                wy = -wy;
+                break;
+            case 270:
+                nwx = wy;
+                wy = -wx;
+                wx = nwx;
+                break;
+            default:
+                break;
+            }
+            //std::cout << " to " << wx << ", " << wy << std::endl;
             break;
         }
-        //std::cout << "Ship is at " << x << ", " << y << " facing " << direction << " degrees" << std::endl;
+        //std::cout << "Ship is at " << x << ", " << y << " with waypoint at " << wx << ", " << wy << " units away" << std::endl;
         commands_followed++;
         std::getline(input, line);
     }
