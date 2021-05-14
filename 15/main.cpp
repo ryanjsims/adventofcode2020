@@ -22,26 +22,26 @@ int main(){
         index = line.find(",", index);
         first = numbers.find(value) == numbers.end();
         if(first){
-            std::cout << "First time " << value << " has been seen" << std::endl;
+            //std::cout << "First time " << value << " has been seen" << std::endl;
             numbers.emplace(value, turn);
         }
         numbers[value] = turn;
         prev = value;
-        std::cout << "Turn " << turn << ": " << value << std::endl;
+        //std::cout << "Turn " << turn << ": " << value << std::endl;
         turn++;
         if(index == std::string::npos){
             break;
         }
         index++;
     }
-    while(turn != 2021){
+    while(turn != 30000001){
         int current = 0;
         char val;
         if(!first){
             current = (turn - 1) - numbers[prev];
-            std::cout << prev <<  " was seen " << current << " turns ago" << std::endl;
+            //std::cout << prev <<  " was seen " << current << " turns ago" << std::endl;
         } else {
-            std::cout << "First time " << prev << " has been seen" << std::endl;
+            //std::cout << "First time " << prev << " has been seen" << std::endl;
         }
         first = numbers.find(current) == numbers.end();
         if(first){
@@ -49,9 +49,10 @@ int main(){
         }
         numbers[prev] = turn - 1;
         prev = current;
-        std::cout << "Turn " << turn << ": " << current << std::endl;
+        //std::cout << "Turn " << turn << ": " << current << std::endl;
         turn++;
     }
+    std::cout << "Turn " << turn - 1 << ": " << prev << std::endl;
 
 
     return 0;
