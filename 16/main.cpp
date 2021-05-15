@@ -3,8 +3,12 @@
 #include <sstream>
 #include <vector>
 #include <array>
+#include <thread>
+#include <chrono>
 #include <iomanip>
 #include <unordered_map>
+
+using namespace std::chrono_literals;
 
 enum class State {
     rules,
@@ -90,7 +94,7 @@ int find_rule_index(std::string rule_name, disjoint_range range, std::vector<tic
         }
     }
     if(padding != 0){
-        out << (index_count == 1 && !name_found ? "\033[44m" : "\033[40m") << rule_name << "\033[0m";
+        out << (index_count == 1 && !name_found ? "\033[44m" : "") << rule_name << "\033[0m";
         for(int i = 0; i < padding; i++){
             out << " ";
         }
@@ -106,8 +110,11 @@ int find_rule_index(std::string rule_name, disjoint_range range, std::vector<tic
 }
 
 void draw_table(std::unordered_map<std::string, disjoint_range> rules, 
-                std::unordered_map<int, std::string> rule_locs, std::vector<ticket> tickets){
+                std::unordered_map<int, std::string> rule_locs, std::vector<ticket> tickets, int delayms=0){
+    if(delayms == 0)
+        return;
     int max_size = 0;
+    std::cout << "\033[4;0f";
     std::stringstream output("");
     for(auto it = rules.begin(); it != rules.end(); it++){
         if(it->first.size() > max_size)
@@ -127,13 +134,19 @@ void draw_table(std::unordered_map<std::string, disjoint_range> rules,
     output << "=====================================================================";
     output << "=====================================================================" << std::endl;
     std::cout << output.str();
+    std::this_thread::sleep_for(std::chrono::milliseconds(delayms));
 }
 
-int main(){
+int main(int argc, char** argv){
+    int delay = 0;
+    if(argc == 2){
+        delay = atoi(argv[1]);
+    }
+    
     State state = State::rules;
     std::ifstream input;
     input.open("input.txt", std::ifstream::in);
-
+    system("clear");
     std::string line;
     std::unordered_map<std::string, disjoint_range> rules;
     ticket mine;
@@ -212,7 +225,7 @@ int main(){
         for(auto it = rules.begin(); it != rules.end(); it++){
             int index = find_rule_index(it->first, it->second, others, rule_locs, 0, std::cout);
             if(index != -1 && rule_locs.find(index) == rule_locs.end()){
-                draw_table(rules, rule_locs, others);
+                draw_table(rules, rule_locs, others, delay);
                 rule_locs.emplace(index, it->first);
             }
         }
@@ -222,6 +235,7 @@ int main(){
         }
         prev = rule_locs.size();
     }
+    draw_table(rules, rule_locs, others, 1);
     uint64_t result = 1;
     for(int i = 0; i < rule_locs.size(); i++){
         if(rule_locs[i].substr(0, 9) == "departure"){
