@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <array>
+#include <iomanip>
 #include <unordered_map>
 
 enum class State {
@@ -63,6 +64,66 @@ int validate_ticket(std::unordered_map<std::string, disjoint_range> rules, ticke
     return 0;
 }
 
+int find_rule_index(std::string rule_name, disjoint_range range, std::vector<ticket> tickets, std::unordered_map<int, std::string> rule_locs, int padding){
+    std::array<bool, 20> indexes;
+    for(int i = 0; i < indexes.size(); i++){
+        indexes[i] = true;
+    }
+    int index_count = 0;
+    bool name_found = false;
+    for(auto ittick = tickets.begin(); ittick != tickets.end(); ittick++){
+        for(int i = 0; i < ittick->size(); i++){
+            if(rule_locs.find(i) == rule_locs.end())
+                indexes[i] &= validate_value(range, (*ittick)[i]);
+            else if(rule_name != rule_locs[i])
+                indexes[i] = false;
+            else
+                name_found = true;
+        }
+    }
+    int valid_index = -1;
+    for(int i = 0; i < indexes.size(); i++){
+        if(indexes[i]){
+            index_count++;
+            valid_index = i;
+        }
+    }
+    if(padding != 0){
+        std::cout << (index_count == 1 && !name_found ? "\033[44m" : "\033[40m") << rule_name << "\033[0m";
+        for(int i = 0; i < padding; i++){
+            std::cout << " ";
+        }
+        std::string t = "\033[1;32m true\033[0m", f = "\033[1;31mfalse\033[0m";
+        for(int i = 0; i < indexes.size(); i++){
+            std::cout << (indexes[i] ? t : f) << " ";
+        }
+        std::cout << std::endl;
+    }
+    if(index_count == 1)
+        return valid_index;
+    return -1;
+}
+
+void draw_table(std::unordered_map<std::string, disjoint_range> rules, 
+                std::unordered_map<int, std::string> rule_locs, std::vector<ticket> tickets){
+    int max_size = 0;
+    for(auto it = rules.begin(); it != rules.end(); it++){
+        if(it->first.size() > max_size)
+            max_size = it->first.size();
+    }
+    for(int i = 0; i < max_size + 1; i++){
+        std::cout << " ";
+    }
+    for(int i = 0; i < 20; i++){
+        std::cout << std::setw(5) << i << " ";
+    }
+    std::cout << std::endl;
+
+    for(auto it = rules.begin(); it != rules.end(); it++){
+        int index = find_rule_index(it->first, it->second, tickets, rule_locs, max_size - it->first.size() + 1);
+    }
+}
+
 int main(){
     State state = State::rules;
     std::ifstream input;
@@ -120,5 +181,45 @@ int main(){
     }
     std::cout << num_errors << " erroneous tickets were detected, with an error rate of " << error_rate << std::endl;
     std::cout << others.size() << " other tickets remain" << std::endl;
+    std::unordered_map<int, std::string> rule_locs;
+    /*rule_locs.emplace(0, "arrival location");
+    rule_locs.emplace(1, "arrival station");
+    rule_locs.emplace(2, "wagon");
+    rule_locs.emplace(3, "seat");
+    rule_locs.emplace(4, "arrival track");
+    rule_locs.emplace(5, "departure location");
+    rule_locs.emplace(8, "duration");
+    rule_locs.emplace(9, "price");
+    rule_locs.emplace(11, "departure station");
+    rule_locs.emplace(12, "zone");
+    rule_locs.emplace(13, "departure time");
+    rule_locs.emplace(14, "departure date");
+    rule_locs.emplace(16, "train");
+    rule_locs.emplace(17, "departure platform");*/
+    rule_locs.emplace(18, "route");
+    rule_locs.emplace(19, "departure track");
+    others.push_back(mine);
+    int prev = rule_locs.size();
+    while(rule_locs.size() != 20){
+        for(auto it = rules.begin(); it != rules.end(); it++){
+            int index = find_rule_index(it->first, it->second, others, rule_locs, 0);
+            if(index != -1){
+                rule_locs.emplace(index, it->first);
+            }
+        }
+        if(prev == rule_locs.size() || rule_locs.size() == 20){
+            draw_table(rules, rule_locs, others);
+            break;
+        }
+        prev = rule_locs.size();
+    }
+    uint64_t result = 1;
+    for(int i = 0; i < rule_locs.size(); i++){
+        if(rule_locs[i].substr(0, 9) == "departure"){
+            result *= mine[i];
+        }
+    }
+    std::cout << result << std::endl;
     return 0;
 }
+
