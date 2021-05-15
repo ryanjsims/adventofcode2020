@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <array>
 #include <iomanip>
@@ -50,21 +51,21 @@ bool validate_value(disjoint_range range, int value){
 }
 
 int validate_ticket(std::unordered_map<std::string, disjoint_range> rules, ticket t){
-    for(auto tickval = t.begin(); tickval != t.end(); tickval++){
+    for(int i = 0; i < t.size(); i++){
         bool passed = false;
         for(auto ruleit = rules.begin(); ruleit != rules.end(); ruleit++){
-            if(validate_value(ruleit->second, *tickval)){
+            if(validate_value(ruleit->second, t[i])){
                 passed = true;
             }
         }
         if(!passed){
-            return *tickval;
+            return t[i];
         }
     }
-    return 0;
+    return -1;
 }
 
-int find_rule_index(std::string rule_name, disjoint_range range, std::vector<ticket> tickets, std::unordered_map<int, std::string> rule_locs, int padding){
+int find_rule_index(std::string rule_name, disjoint_range range, std::vector<ticket> tickets, std::unordered_map<int, std::string> rule_locs, int padding, std::ostream& out){
     std::array<bool, 20> indexes;
     for(int i = 0; i < indexes.size(); i++){
         indexes[i] = true;
@@ -89,15 +90,15 @@ int find_rule_index(std::string rule_name, disjoint_range range, std::vector<tic
         }
     }
     if(padding != 0){
-        std::cout << (index_count == 1 && !name_found ? "\033[44m" : "\033[40m") << rule_name << "\033[0m";
+        out << (index_count == 1 && !name_found ? "\033[44m" : "\033[40m") << rule_name << "\033[0m";
         for(int i = 0; i < padding; i++){
-            std::cout << " ";
+            out << " ";
         }
         std::string t = "\033[1;32m true\033[0m", f = "\033[1;31mfalse\033[0m";
         for(int i = 0; i < indexes.size(); i++){
-            std::cout << (indexes[i] ? t : f) << " ";
+            out << (indexes[i] ? t : f) << " ";
         }
-        std::cout << std::endl;
+        out << std::endl;
     }
     if(index_count == 1)
         return valid_index;
@@ -107,21 +108,25 @@ int find_rule_index(std::string rule_name, disjoint_range range, std::vector<tic
 void draw_table(std::unordered_map<std::string, disjoint_range> rules, 
                 std::unordered_map<int, std::string> rule_locs, std::vector<ticket> tickets){
     int max_size = 0;
+    std::stringstream output("");
     for(auto it = rules.begin(); it != rules.end(); it++){
         if(it->first.size() > max_size)
             max_size = it->first.size();
     }
     for(int i = 0; i < max_size + 1; i++){
-        std::cout << " ";
+        output << " ";
     }
     for(int i = 0; i < 20; i++){
-        std::cout << std::setw(5) << i << " ";
+        output << std::setw(5) << i << " ";
     }
-    std::cout << std::endl;
+    output << std::endl;
 
     for(auto it = rules.begin(); it != rules.end(); it++){
-        int index = find_rule_index(it->first, it->second, tickets, rule_locs, max_size - it->first.size() + 1);
+        int index = find_rule_index(it->first, it->second, tickets, rule_locs, max_size - it->first.size() + 1, output);
     }
+    output << "=====================================================================";
+    output << "=====================================================================" << std::endl;
+    std::cout << output.str();
 }
 
 int main(){
@@ -160,6 +165,9 @@ int main(){
         }
         std::getline(input, line);
     }
+    if(line != ""){
+        others.push_back(parse_ticket(line));
+    }
     /*std::cout << "Rules:" << std::endl;
     for(auto it = rules.begin(); it != rules.end(); it++){
         std::cout << it->first << ": ";
@@ -171,8 +179,8 @@ int main(){
     int i = 0;
     while(i < others.size()){
         int error = validate_ticket(rules, others[i]);
-        error_rate += error;
-        if(error != 0){
+        error_rate += error == -1 ? 0 : error;
+        if(error != -1){
             others.erase(others.begin() + i);
             num_errors++;
         } else {
@@ -196,19 +204,20 @@ int main(){
     rule_locs.emplace(14, "departure date");
     rule_locs.emplace(16, "train");
     rule_locs.emplace(17, "departure platform");*/
-    rule_locs.emplace(18, "route");
-    rule_locs.emplace(19, "departure track");
+    //rule_locs.emplace(18, "route");
+    //rule_locs.emplace(19, "departure track");
     others.push_back(mine);
     int prev = rule_locs.size();
     while(rule_locs.size() != 20){
         for(auto it = rules.begin(); it != rules.end(); it++){
-            int index = find_rule_index(it->first, it->second, others, rule_locs, 0);
-            if(index != -1){
+            int index = find_rule_index(it->first, it->second, others, rule_locs, 0, std::cout);
+            if(index != -1 && rule_locs.find(index) == rule_locs.end()){
+                draw_table(rules, rule_locs, others);
                 rule_locs.emplace(index, it->first);
             }
         }
         if(prev == rule_locs.size() || rule_locs.size() == 20){
-            draw_table(rules, rule_locs, others);
+            //draw_table(rules, rule_locs, others);
             break;
         }
         prev = rule_locs.size();
