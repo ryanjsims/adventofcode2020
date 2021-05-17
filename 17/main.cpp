@@ -3,59 +3,103 @@
 #include <iomanip>
 #include <array>
 #include <unordered_map>
+#include <vector>
+#include <math.h>
+
+#define MAX_DIM 4
 
 struct coordinate {
-    int x, y, z, w;
-    int& operator[](int index) {
-        if(index == 0)
-            return x;
-        if(index == 1)
-            return y;
-        if(index == 2)
-            return z;
-        if(index == 3)
-            return w;
-        throw new std::out_of_range("Must be in range [0, 2]"); 
+    coordinate(){
+        this->x = 0;
+        this->y = 0;
+        this->z = 0;
+        this->w = 0;
     }
 
-    inline std::size_t size(){
-        return 4;
+    coordinate(int x, int y, int z, int w){
+        this->x = x;
+        this->y = y;
+        this->z = z;
+        this->w = w;
+    }
+
+    coordinate(const coordinate& other){
+        for(int i = 0; i < size(); i++){
+            data[i] = other.data[i];
+        }
+    }
+    union{
+        struct {
+            int x, y, z, w;
+        };
+        int data[MAX_DIM];
+    };
+    static size_t ndim;
+    
+    int& operator[](int index) {
+        if(index < 0 || index >= size())
+            throw new std::out_of_range("incorrect index"); 
+        return data[index];
+    }
+
+    inline std::size_t size() const{
+        return std::min(ndim, (size_t)MAX_DIM);
     }
 
     bool operator==(const coordinate &other) const {
-        return this->x == other.x && this->y == other.y && this->z == other.z && this->w == other.w;
+        bool to_return = true;
+        for(int i = 0; i < size(); i++){
+            to_return &= data[i] == other.data[i];
+        }
+        return to_return;
     }
 
     /**
      * operator< - Strict compare, returns true iff all three coordinates are <= the other's
      * */
     bool operator<(const coordinate &other) const {
-        return this->x <= other.x && this->y <= other.y && this->z <= other.z && this->w <= other.w;
+        bool to_return = true;
+        for(int i = 0; i < size(); i++){
+            to_return &= data[i] <= other.data[i];
+        }
+        return to_return;;
     }
 
     /**
      * operator> - Strict compare, returns true iff all three coordinates are >= the other's
      * */
     bool operator>(const coordinate &other) const {
-        return this->x >= other.x && this->y >= other.y && this->z >= other.z && this->w >= other.w;
+        bool to_return = true;
+        for(int i = 0; i < size(); i++){
+            to_return &= data[i] >= other.data[i];
+        }
+        return to_return;
     }
 
     /**
      * operator<= - Loose compare, returns true if any of the coordinates are <= the other's corresponding coordinates
      * */
     bool operator<=(const coordinate &other) const {
-        return this->x <= other.x || this->y <= other.y || this->z <= other.z || this->w <= other.w;
+        bool to_return = false;
+        for(int i = 0; i < size(); i++){
+            to_return |= data[i] <= other.data[i];
+        }
+        return to_return;
     }
 
     /**
      * operator>= - Loose compare, returns true if any of the coordinates are >= the other's corresponding coordinates
      * */
     bool operator>=(const coordinate &other) const {
-        return this->x >= other.x || this->y >= other.y || this->z >= other.z || this->w >= other.w;
+        bool to_return = false;
+        for(int i = 0; i < size(); i++){
+            to_return |= data[i] >= other.data[i];
+        }
+        return to_return;
     }
 
     coordinate minimize(coordinate other){
-        coordinate to_return;
+        coordinate to_return{};
         for(int i = 0; i < to_return.size(); i++){
             to_return[i] = std::min((*this)[i], other[i]);
         }
@@ -63,13 +107,15 @@ struct coordinate {
     }
 
     coordinate maximize(coordinate other){
-        coordinate to_return;
+        coordinate to_return{};
         for(int i = 0; i < to_return.size(); i++){
             to_return[i] = std::max((*this)[i], other[i]);
         }
         return to_return;
     }
 };
+
+size_t coordinate::ndim = 4;
 
 namespace std {
     template <>
@@ -88,28 +134,7 @@ namespace std {
     }
 }
 
-int neighbor_count(std::unordered_map<coordinate, bool> world, coordinate cell){
-    int count = 0;
-    for(int w = cell.w - 1; w <= cell.w + 1; w++){
-        for(int z = cell.z - 1; z <= cell.z + 1; z++){
-            for(int y = cell.y - 1; y <= cell.y + 1; y++){
-                for(int x = cell.x - 1; x <= cell.x + 1; x++){
-                    if(coordinate{x, y, z, w} == cell)
-                        continue;
-                    if(world[{x, y, z, w}]){
-                        //std::cout << "Found neighbor at ";
-                        //print_coord({x, y, z});
-                        //std::cout << std::endl;
-                        count++;
-                    }
-                }
-            }
-        }
-    }
-    return count;
-}
-
-void draw_plane(std::unordered_map<coordinate, bool> world, int w, int z, std::pair<int, int> x, std::pair<int, int> y){
+void fdraw_plane(std::unordered_map<coordinate, int> frontier, const std::unordered_map<coordinate, bool> world, int w, int z, std::pair<int, int> x, std::pair<int, int> y){
     std::cout << "   ";
     for(int i = x.first; i <= x.second; i++){
         std::cout << std::setw(3) << std::right << i;
@@ -119,10 +144,15 @@ void draw_plane(std::unordered_map<coordinate, bool> world, int w, int z, std::p
     for(int j = y.first; j <= y.second; j++){
         std::cout << std::setw(3) << std::right << j;
         for(int i = x.first; i <= x.second; i++){
-            if(world[{i, j, z}]){
-                std::cout << "\033[1;32m" << std::setw(3) << std::right << neighbor_count(world, {i, j, z, w}) << "\033[0m";
+            coordinate curr = {i, j, z, w};
+            if(frontier.find(curr) == frontier.end()){
+                std::cout << "\033[1;31m  0\033[0m";
+                continue;
+            }
+            if(world.find(curr) != world.end()) {
+                std::cout << "\033[1;32m" << std::setw(3) << std::right << frontier[curr] << "\033[0m";
             } else {
-                std::cout << "\033[1;31m" << std::setw(3) << std::right << neighbor_count(world, {i, j, z, w}) << "\033[0m";
+                std::cout << "\033[1;31m" << std::setw(3) << std::right << frontier[curr] << "\033[0m";
             }
         }
         std::cout << std::endl;
@@ -130,52 +160,18 @@ void draw_plane(std::unordered_map<coordinate, bool> world, int w, int z, std::p
     std::cout << std::endl << std::endl;
 }
 
-void draw_cube(std::unordered_map<coordinate, bool> world, int w, std::pair<coordinate, coordinate> AABB, int offset = 0){
+void fdraw_cube(std::unordered_map<coordinate, int> frontier, const std::unordered_map<coordinate, bool> world, int w, std::pair<coordinate, coordinate> AABB, int offset = 0){
     for(int z = AABB.first.z - offset; z <= AABB.second.z + offset; z++){
         std::cout << "(z, w): (" << z << ", " << w << ")" << std::endl;
-        draw_plane(world, w, z, std::make_pair(AABB.first.x - offset, AABB.second.x + offset), 
+        fdraw_plane(frontier, world, w, z, std::make_pair(AABB.first.x - offset, AABB.second.x + offset), 
                              std::make_pair(AABB.first.y - offset, AABB.second.y + offset));
     }
 }
 
-void draw_hypercube(std::unordered_map<coordinate, bool> world, std::pair<coordinate, coordinate> AABB, int offset = 0){
+void fdraw_hypercube(std::unordered_map<coordinate, int> frontier, const std::unordered_map<coordinate, bool> world, std::pair<coordinate, coordinate> AABB, int offset = 0){
     for(int w = AABB.first.w - offset; w <= AABB.second.w + offset; w++){
-        draw_cube(world, w, AABB, offset);
+        fdraw_cube(frontier, world, w, AABB, offset);
     }
-}
-
-int find_min_cube(std::unordered_map<coordinate, bool> world,
-                    std::pair<int, int> search_bounds,
-                    std::pair<int, int> plane1_bounds,
-                    std::pair<int, int> plane2_bounds,
-                    std::pair<int, int> plane3_bounds,
-                    std::array<int, 4> index,
-                    int* cells = nullptr){
-    int directionz = (search_bounds.second - search_bounds.first) / std::abs(search_bounds.second - search_bounds.first);
-    int directiony = (plane1_bounds.second - plane1_bounds.first) / std::abs(plane1_bounds.second - plane1_bounds.first);
-    int directionx = (plane2_bounds.second - plane2_bounds.first) / std::abs(plane2_bounds.second - plane2_bounds.first);
-    int directionw = (plane3_bounds.second - plane3_bounds.first) / std::abs(plane3_bounds.second - plane3_bounds.first);
-    if(cells != nullptr)
-        *cells = 0;
-    for(int z = search_bounds.first; z != search_bounds.second + directionz; z+=directionz){
-        for(int y = plane1_bounds.first; y != plane1_bounds.second + directiony; y+=directiony){
-            for(int x = plane2_bounds.first; x != plane2_bounds.second + directionx; x+=directionx){
-                for(int w = plane3_bounds.first; w != plane3_bounds.second + directionw; w+=directionw){
-                    coordinate loc;
-                    loc[index[0]] = z;
-                    loc[index[1]] = y;
-                    loc[index[2]] = x;
-                    loc[index[3]] = w;
-                    if(cells != nullptr)
-                        (*cells)++;
-                    if(world[loc]){
-                        return z;
-                    }
-                }
-            }
-        }
-    }
-    return search_bounds.second + directionz;
 }
 
 std::pair<coordinate, coordinate> get_minimum_AABB(std::unordered_map<coordinate, bool> world, std::pair<coordinate, coordinate> prevAABB){
@@ -184,37 +180,70 @@ std::pair<coordinate, coordinate> get_minimum_AABB(std::unordered_map<coordinate
     for(auto it = world.begin(); it != world.end(); it++){
         if(!it->second)
             continue;
-        if(it->first.x < min.x){
-            min.x = it->first.x;
-        }
-        if(it->first.x > max.x){
-            max.x = it->first.x;
-        }
-        if(it->first.y < min.y){
-            min.y = it->first.y;
-        }
-        if(it->first.y > max.y){
-            max.y = it->first.y;
-        }
-        if(it->first.z < min.z){
-            min.z = it->first.z;
-        }
-        if(it->first.z > max.z){
-            max.z = it->first.z;
-        }
-        if(it->first.w < min.w){
-            min.w = it->first.w;
-        }
-        if(it->first.w > max.w){
-            max.w = it->first.w;
+        min = min.minimize(it->first);
+        max = max.maximize(it->first);
+        if(min.w != 0 || max.w != 0){
+            std::cout << "get_minimum_AABB\n" << min << std::endl << max << std::endl;
         }
     }
     return std::make_pair(min, max);
 }
 
-int main(){
+void generate_neighbors_rec(const coordinate location, int dim, std::vector<coordinate> &neighbors){
+    coordinate permutation = location;
+    if(dim == location.size()){
+        neighbors.push_back(permutation);
+        return;
+    }
+    for(int i = -1; i <= 1; i++){
+        permutation.data[dim] = location.data[dim] + i;
+        generate_neighbors_rec(permutation, dim + 1, neighbors);
+    }
+}
+
+
+std::vector<coordinate> generate_neighbors(coordinate location){
+    std::vector<coordinate> neighbors;
+    generate_neighbors_rec(location, 0, neighbors);
+    bool p = false;
+    for(int i = 0; i < neighbors.size(); i++){
+        if(neighbors[i].w != 0)
+            p = true;
+    }
+    if(p){
+        for(int i = 0; i < neighbors.size(); i++){
+            std::cout << neighbors[i] << std::endl;
+        }
+    }
+    return neighbors;
+}
+
+std::unordered_map<coordinate, int> generate_frontier(std::unordered_map<coordinate, bool> world){
+    std::unordered_map<coordinate, int> frontier;
+    for(auto it = world.begin(); it != world.end(); it++){
+        std::vector<coordinate> neighbors = generate_neighbors(it->first);
+        for(auto nit = neighbors.begin(); nit != neighbors.end(); nit++){
+            coordinate curr = *nit;
+            if(frontier.find(curr) == frontier.end()){
+                frontier[curr] = 0;
+            }
+            if(!(curr == it->first))
+                frontier[curr]++;
+        }
+    }
+    return frontier;
+}
+
+int main(int argc, char** argv){
     std::ifstream input;
-    input.open("smallinput.txt", std::ifstream::in);
+    if(argc == 3){
+        coordinate::ndim = atoi(argv[2]);
+        input.open(argv[1], std::ifstream::in);
+    } else if(argc == 2){
+        input.open(argv[1], std::ifstream::in);
+    } else {
+        input.open("input.txt", std::ifstream::in);
+    }
 
     std::unordered_map<coordinate, bool> world1, world2;
     std::string line;
@@ -222,7 +251,6 @@ int main(){
     int x = 0, y = 0, z = 0, w = 0;
     while(input.good()){
         std::getline(input, line);
-        std::cout << line << std::endl;
         if(line == "")
             break;
         for(int x = 0; x < line.size(); x++){
@@ -232,51 +260,36 @@ int main(){
                 AABB.first = AABB.first.minimize(curr);
                 AABB.second = AABB.second.maximize(curr);
                 world1[curr] = true;
-                world2[curr] = true;
-                break;
-            case '.':
-                world1[curr] = false;
-                world2[curr] = false;
                 break;
             }
         }
         y++;
     }
-    std::cout << AABB.first << std::endl;
-    std::cout << AABB.second << std::endl;
-    std::cin.get();
     
     std::unordered_map<coordinate, bool>* world = &world1, *next_world = &world2;
-    for(int i = 0; i < 6; i++){
+    int i;
+    for(i = 0; i < 6; i++){
         std::cout << "Iteration " << i << std::endl;
-        draw_hypercube(*world, AABB);
+        std::unordered_map<coordinate, int> frontier = generate_frontier(*world);
         AABB = get_minimum_AABB(*world, AABB);
-        for(w = AABB.first.w - 1; w <= AABB.second.w + 1; w++){
-            for(z = AABB.first.z - 1; z <= AABB.second.z + 1; z++){
-                for(y = AABB.first.y - 1; y <= AABB.second.y + 1; y++){
-                    for(x = AABB.first.x - 1; x <= AABB.second.x + 1; x++){
-                        //std::cout << coordinate{x, y, z} << ": ";
-                        switch(neighbor_count(*world, {x, y, z, w})){
-                        case 2:
-                            //std::cout << "maintaining";
-                            (*next_world)[{x, y, z, w}] = (*world)[{x, y, z, w}];
-                            break;
-                        case 3:
-                            (*next_world)[{x, y, z, w}] = true;
-                            if(!(*world)[{x, y, z, w}]){
-                                //std::cout << "activating";
-                            }
-                            break;
-                        default:
-                            (*next_world)[{x, y, z, w}] = false;
-                            if((*world)[{x, y, z, w}]){
-                                //std::cout << "deactivating";
-                            }
-                            break;
-                        }
-                        //std::cout << std::endl;
+        if(AABB.first.w != 0 || AABB.second.w != 0){
+            std::cout << AABB.first << std::endl;
+            std::cout << AABB.second << std::endl;
+        }
+        fdraw_cube(frontier, *world, 0, AABB);
+        next_world->clear();
+        for(auto it = frontier.begin(); it != frontier.end(); it++){
+            switch(it->second){
+                case 2:
+                    if(world->find(it->first) != world->end()){
+                        next_world->emplace(it->first, true);
                     }
-                }
+                    break;
+                case 3:
+                    next_world->emplace(it->first, true);
+                    break;
+                default:
+                    break;
             }
         }
         auto* temp = world;
@@ -285,18 +298,14 @@ int main(){
         //break;
         //std::cin.get();
     }
+    std::cout << "Iteration " << i << std::endl;
     AABB = get_minimum_AABB(*world, AABB);
-    std::cout << "Iteration " << 6 << std::endl;
-    draw_hypercube(*world, AABB);
+    std::unordered_map<coordinate, int> frontier = generate_frontier(*world);
+    fdraw_cube(frontier, *world, 0, AABB);
     std::cout << AABB.first << std::endl;
     std::cout << AABB.second << std::endl;
     int active = 0;
-    std::cout << "The world has " << world->size() << " cells after 6 cycles" << std::endl;
-    for(auto it = world->begin(); it != world->end(); it++){
-        if(it->second){
-            active++;
-        }
-    }
-    std::cout << "There are " << active << " active cells after 6 cycles" << std::endl;
+    std::cout << "There are " << world->size() << " active cells after " << i << " cycles" << std::endl;
+    std::cout << "There are " << next_world->size() << " active cells after " << i - 1 << " cycles" << std::endl;
     return 0;
 }
