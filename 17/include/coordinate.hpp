@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include <iostream>
+
 #define MAX_DIM 4
 
 struct coordinate {
@@ -25,9 +27,10 @@ struct coordinate {
     }
 
     coordinate(const coordinate& other){
-        for(int i = 0; i < size(); i++){
-            data[i] = other.data[i];
-        }
+        x = other.x;
+        y = other.y;
+        z = other.z;
+        w = other.w;
     }
     union{
         struct {

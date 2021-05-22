@@ -11,8 +11,8 @@
 
 #include "coordinate.hpp"
 #include "vertex.hpp"
-#include "../opengl/window.hpp"
-#include "../opengl/shader.hpp"
+#include "opengl/window.hpp"
+#include "opengl/shader.hpp"
 
 namespace std {
     template <>
@@ -87,8 +87,8 @@ std::pair<std::vector<int>, std::vector<float>> get_mesh(std::unordered_map<coor
     std::list<vertex> vertices;
 
     std::array<vertex, 8> offsets = {
-        vertex{-0.5f, -0.5f, -0.5f}, vertex{0.5f, -0.5f, -0.5f}, vertex{0.5f, -0.5f, 0.5f}, vertex{-0.5f, -0.5f, 0.5f}, 
-        vertex{-0.5f,  0.5f, -0.5f}, vertex{0.5f,  0.5f, -0.5f}, vertex{0.5f,  0.5f, 0.5f}, vertex{-0.5f,  0.5f, 0.5f}
+        vertex{-0.45f, -0.45f, -0.45f}, vertex{0.45f, -0.45f, -0.45f}, vertex{0.45f, -0.45f, 0.45f}, vertex{-0.45f, -0.45f, 0.45f}, 
+        vertex{-0.45f,  0.45f, -0.45f}, vertex{0.45f,  0.45f, -0.45f}, vertex{0.45f,  0.45f, 0.45f}, vertex{-0.45f,  0.45f, 0.45f}
     };
     for(auto it = world.begin(); it != world.end(); it++){
         if(it->first.w != w){
@@ -193,15 +193,18 @@ std::pair<std::vector<int>, std::vector<float>> get_mesh(std::unordered_map<coor
     return std::make_pair(index_data, vertex_data);
 }
 
-int draw_conway(rjs::window& win, std::unordered_map<std::pair<int, int>, std::pair<uint, int>> VAOs){
+int max_cycle = 6;
+
+int draw_conway(rjs::window& win, std::unordered_map<std::pair<int, int>, std::pair<uint, int>> VAOs, int cycles){
+    max_cycle = cycles;
     rjs::shader shader("./shaders/conway.vs.glsl", "./shaders/conway.fs.glsl");
     if(!shader.good()){
         return 1;
     }
     shader.use();
     glm::mat4 projection(1.0f);
-    projection = glm::perspective(glm::radians(74.0f), (float)win.width() / win.height(), 1.0f, 1000.0f);
-    model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    //projection = glm::ortho(-12.0f, 12.0f, -8.0f, 8.0f, 0.1f, 1000.0f); 
+    projection = glm::perspective(glm::radians(74.0f), (float)win.width() / win.height(), 0.1f, 1000.0f);
     view = glm::translate(view, glm::vec3(0.0f, -5.0f, -10.0f));
 
     shader.setMat4("model", model);
@@ -277,11 +280,11 @@ int draw_conway(rjs::window& win, std::unordered_map<std::pair<int, int>, std::p
             glfwSetWindowShouldClose(glWindow, true);
         }
         if(key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT)){
-            step = (step + 1) % 6;
+            step = (step + 1) % max_cycle;
         }
 
         if(key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT)){
-            step = (step - 1 + 6) % 6;
+            step = (step - 1 + max_cycle) % max_cycle;
         }
 
         if(key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT)){

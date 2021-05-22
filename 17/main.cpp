@@ -8,10 +8,10 @@
 #include <set>
 #include <math.h>
 
-#include "coordinate.hpp"
-#include "vertex.hpp"
-#include "drawing.hpp"
-#include "textoutput.hpp"
+#include "include/coordinate.hpp"
+#include "include/vertex.hpp"
+#include "include/drawing.hpp"
+#include "include/textoutput.hpp"
 
 #include "../opengl/window.hpp"
 #include "../opengl/shader.hpp"
@@ -61,15 +61,24 @@ std::unordered_map<coordinate, int> generate_frontier(std::unordered_map<coordin
     return frontier;
 }
 
-void handle_commandline(int argc, char** argv, std::ifstream& input){
-    if(argc == 3){
-        coordinate::ndim = atoi(argv[2]);
-        input.open(argv[1], std::ifstream::in);
-    } else if(argc == 2){
-        input.open(argv[1], std::ifstream::in);
-    } else {
-        input.open("input.txt", std::ifstream::in);
+void handle_commandline(int argc, char** argv, std::ifstream& input, int* cycles){
+    std::string to_open = "input.txt";
+    for(int i = 1; i < argc; i++){
+        switch(i){
+        case 1:
+            to_open = argv[i];
+            break;
+        case 2:
+            coordinate::ndim = atoi(argv[2]);
+            break;
+        case 3:
+            if(cycles){
+                *cycles = atoi(argv[3]);
+            }
+            break;
+        }
     }
+    input.open(to_open, std::ifstream::in);
 }
 
 void read_input(std::ifstream& input, std::unordered_map<coordinate, bool>& world){
@@ -95,7 +104,8 @@ void read_input(std::ifstream& input, std::unordered_map<coordinate, bool>& worl
 int main(int argc, char** argv){
     rjs::window win("Conway Multidimensional Visualizer", 100, 100, 800, 600);
     std::ifstream input;
-    handle_commandline(argc, argv, input);
+    int cycles = 6;
+    handle_commandline(argc, argv, input, &cycles);
 
     std::unordered_map<coordinate, bool> world1, world2;
     read_input(input, world1);
@@ -108,7 +118,7 @@ int main(int argc, char** argv){
     //Mapping from (life step, w coord) to (model, num vertices)
     std::unordered_map<std::pair<int, int>, std::pair<uint, int>> VAOs;
 
-    for(i = 0; i < 6; i++){
+    for(i = 0; i < cycles; i++){
         //std::cout << "Iteration " << i << std::endl;
         std::unordered_map<coordinate, int> frontier = generate_frontier(*world);
         AABB = get_minimum_AABB(*world);
@@ -136,6 +146,8 @@ int main(int argc, char** argv){
         //break;
         //std::cin.get();
     }
+    AABB = get_minimum_AABB(*world);
+    load_vertices(*world, AABB, i, VAOs, VBOs, EBOs);
     //std::cout << "Iteration " << i << std::endl;
     //AABB = get_minimum_AABB(*world, AABB);
     //std::unordered_map<coordinate, int> frontier = generate_frontier(*world);
@@ -146,6 +158,6 @@ int main(int argc, char** argv){
     std::cout << "There are " << world->size() << " active cells after " << i << " cycles" << std::endl;
     std::cout << "There are " << next_world->size() << " active cells after " << i - 1 << " cycles" << std::endl;
 
-    draw_conway(win, VAOs);    
+    draw_conway(win, VAOs, cycles + 1);    
     return 0;
 }
