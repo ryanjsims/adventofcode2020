@@ -19,7 +19,7 @@ float vertices[] = {
 int run(int argc, char** argv){
     rjs::window window("Conway Visualization", 300, 100, 400, 400);
 
-    window.on_draw([]{
+    window.on_draw([](double deltatime){
         glClear(GL_COLOR_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLES, 0, 3);
     });
