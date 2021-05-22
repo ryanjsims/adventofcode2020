@@ -1,9 +1,13 @@
 #include <iostream>
 #include <fstream>
 
-int main(){
+int main(int argc, char** argv){
+    std::string filename = "input.txt";
     std::ifstream input;
-    input.open("input.txt", std::ifstream::in);
+    if(argc == 2){
+        filename = argv[1];
+    }
+    input.open(filename, std::ifstream::in);
 
     std::string line;
     std::getline(input, line);
