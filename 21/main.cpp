@@ -2,6 +2,8 @@
 #include <fstream>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
+#include <algorithm>
 
 int main(int argc, char** argv){
     std::string filename = "input.txt";
@@ -75,5 +77,26 @@ int main(int argc, char** argv){
     }
     std::cout << total << std::endl;
 
+    std::vector<std::pair<std::string, std::string>> danger;
+    for(auto it = ingredients_with.begin(); it != ingredients_with.end(); it++){
+        std::cout << "Ingredients with " << it->first << ":" << std::endl;
+        for(auto it2 = it->second.begin(); it2 != it->second.end(); it2++){
+            danger.push_back(std::make_pair(it->first, *it2));
+            std::cout << "\t" << *it2 << std::endl;
+        }
+    }
+    struct {
+        bool operator()(std::pair<std::string, std::string> a, std::pair<std::string, std::string> b){
+            return a.first < b.first;
+        }
+    } checkfirst;
+    std::sort(danger.begin(), danger.end(), checkfirst);
+    for(auto it = danger.begin(); it != danger.end(); it++){
+        if(it != danger.begin()){
+            std::cout << ",";
+        }
+        std::cout << it->second;
+    }
+    std::cout << std::endl;
     return 0;
 }
