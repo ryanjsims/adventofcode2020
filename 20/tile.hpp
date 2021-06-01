@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include "opengl/vertex.hpp"
+#include "opengl/mesh.hpp"
 
 enum class direction {
     CCW,
@@ -633,7 +634,7 @@ public:
         }
     }
 
-    void load_vertices(uint VAO, uint VBO, uint EBO, int x, int y){
+    void load_vertices(rjs::mesh& mesh, int x, int y){
         float vertices[40];
         uint indices[36] = {
             0, 1, 2,
@@ -671,16 +672,10 @@ public:
             vertices[i * 5 + 3] = tex_coords[(i * 2) % 8];
             vertices[i * 5 + 4] = tex_coords[(i * 2 + 1) % 8];
         }
-        glBindVertexArray(VAO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
+        mesh.buffer(vertices, sizeof(float), 40, indices, sizeof(uint), 36, GL_STATIC_DRAW);
+        std::vector<std::pair<unsigned, size_t>> layout = { {3, sizeof(float)}, {2, sizeof(float)} };
+        mesh.setup_vertex_pointer(layout, GL_FLOAT, 5 * sizeof(float));
     }
 
     std::pair<std::array<float, 40>, std::array<int, 36>> get_vertex_data(int x, int y){

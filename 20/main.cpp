@@ -13,6 +13,7 @@
 #include "opengl/shader.hpp"
 #include "opengl/texture.hpp"
 #include "opengl/vertex.hpp"
+#include "opengl/mesh.hpp"
 
 #include "tile.hpp"
 
@@ -592,13 +593,14 @@ void draw_tiles(){
     }
     shader.use();
     texture_ids = rjs::texture::generate(2);
-    uint *VAOs = new uint[tiles.size()];
+    std::vector<rjs::mesh> meshes = rjs::mesh::generate(tiles.size());
+    /*uint *VAOs = new uint[tiles.size()];
     uint *VBOs = new uint[tiles.size()];
     uint *EBOs = new uint[tiles.size()];
 
     glGenVertexArrays(tiles.size(), VAOs);
     glGenBuffers(tiles.size(), VBOs);
-    glGenBuffers(tiles.size(), EBOs);
+    glGenBuffers(tiles.size(), EBOs);*/
 
     glActiveTexture(GL_TEXTURE0);
     create_texture_atlas(texture_ids);
@@ -606,7 +608,7 @@ void draw_tiles(){
     
     int x = 0, y = 0;
     for(int i = 0; i < tiles.size(); i++){
-        tiles[i]->load_vertices(VAOs[i], VBOs[i], EBOs[i], x, y);
+        tiles[i]->load_vertices(meshes[i], x, y);
         x++;
         if(x == (int)glm::sqrt(tiles.size())){
             x = 0;
@@ -631,7 +633,7 @@ void draw_tiles(){
     
     glClearColor(0.2, 0.2, 0.2, 1.0);
 
-    window.on_draw([VAOs, &shader, selected, deselected](double deltaTime){
+    window.on_draw([meshes, &shader, selected, deselected](double deltaTime){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         if(keys_down[GLFW_KEY_I]){
             viewy -= 10 * deltaTime;
@@ -678,8 +680,7 @@ void draw_tiles(){
             model = glm::rotate(model, glm::radians(tiles[i]->get_vflip()), glm::vec3(1.0f, 0.0f, 0.0f));
             model = glm::rotate(model, glm::radians(tiles[i]->get_rotate()), glm::vec3(0.0f, 0.0f, 1.0f));
             shader.setMat4("model", model);
-            glBindVertexArray(VAOs[i]);
-            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+            meshes[i].draw();
         }
     });
 
