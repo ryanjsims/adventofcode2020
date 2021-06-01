@@ -87,8 +87,8 @@ std::pair<std::vector<int>, std::vector<float>> get_mesh(std::unordered_map<coor
     std::list<vertex> vertices;
 
     std::array<vertex, 8> offsets = {
-        vertex{-0.45f, -0.45f, -0.45f}, vertex{0.45f, -0.45f, -0.45f}, vertex{0.45f, -0.45f, 0.45f}, vertex{-0.45f, -0.45f, 0.45f}, 
-        vertex{-0.45f,  0.45f, -0.45f}, vertex{0.45f,  0.45f, -0.45f}, vertex{0.45f,  0.45f, 0.45f}, vertex{-0.45f,  0.45f, 0.45f}
+        vertex{-0.5f, -0.5f, -0.5f}, vertex{0.5f, -0.5f, -0.5f}, vertex{0.5f, -0.5f, 0.5f}, vertex{-0.5f, -0.5f, 0.5f}, 
+        vertex{-0.5f,  0.5f, -0.5f}, vertex{0.5f,  0.5f, -0.5f}, vertex{0.5f,  0.5f, 0.5f}, vertex{-0.5f,  0.5f, 0.5f}
     };
     for(auto it = world.begin(); it != world.end(); it++){
         if(it->first.w != w){
