@@ -91,8 +91,8 @@ namespace rjs {
         void cursor_mode(int mode){
             glfwSetInputMode(m_window, GLFW_CURSOR, mode);
         }
-
-        void run(bool* flag=nullptr){
+        
+        void run(bool* flag=nullptr, std::chrono::milliseconds sleep_amt = std::chrono::milliseconds(10)){
             glfwShowWindow(m_window);
             using namespace std::chrono;
             time_point<high_resolution_clock> next_frametime, prev_frametime = high_resolution_clock::now();
@@ -103,7 +103,7 @@ namespace rjs {
                 prev_frametime = high_resolution_clock::now();
                 glfwSwapBuffers(m_window);
                 glfwPollEvents();
-                std::this_thread::sleep_for(16ms);
+                std::this_thread::sleep_for(sleep_amt);
             }
         }
 
