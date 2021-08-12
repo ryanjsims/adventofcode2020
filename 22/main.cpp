@@ -3,8 +3,16 @@
 #include <deque>
 #include <unordered_set>
 #include <sstream>
-#include <freetype2/ft2build.h>
-#include FT_FREETYPE_H
+
+#ifdef USEGL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <opengl/window.hpp>
+#include <opengl/shader.hpp>
+#include <opengl/mesh.hpp>
+
+#include "card.hpp"
+#endif
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -17,6 +25,7 @@ std::string build_state(std::deque<int> p1, std::deque<int> p2){
     for(int i = 0; i < p1.size(); i++){
         builder << base58[p1[i]];
     }
+    builder << '-';
     for(int i = 0; i < p2.size(); i++){
         builder << base58[p2[i]];
     }
@@ -153,12 +162,15 @@ bool play_round(std::deque<int>& p1, std::deque<int>& p2){
 bool play_game(std::deque<int>& p1, std::deque<int>& p2){
     int round = 1;
     while(p1.size() != 0 && p2.size() != 0){
-        if(play_round(p1, p2)){
+        bool winner = play_round(p1, p2);
+        #if DEBUG > 0
+        if(winner){
             std::cout << "Player 1";
         } else {
             std::cout << "Player 2";
         }
         std::cout << " won round " << round << std::endl;
+        #endif
         round++;
     }
     return p1.size() != 0;
@@ -222,5 +234,40 @@ int main(int argc, char** argv){
         curr->pop_back();
     }
     std::cout << "Winner's score: " << score << std::endl;
+#ifdef USEGL
+    rjs::window window("Combat!", 300, 100, 800, 600);
+    rjs::shader shader("shaders/card.vs.glsl", "shaders/card.fs.glsl");
+    if(!shader.good()){
+        exit(EXIT_FAILURE);
+    }
+    glActiveTexture(GL_TEXTURE0);
+    std::vector<rjs::mesh> card_meshes = rjs::mesh::generate(4);
+    std::vector<card> cards;
+    for(int i = 0; i < card_meshes.size(); i++){
+        cards.push_back(card(i, card_meshes[i]));
+    }
+    glm::mat4 model, projection, view;
+    model = glm::identity<glm::mat4>();
+    projection = glm::perspective(glm::radians(74.0f), (float)window.width() / (float)window.height(), 0.1f, 1000.0f);
+    view = glm::identity<glm::mat4>();
+    view = glm::translate(view, glm::vec3(-2.5f, 0.0f, -5.0f));
+
+    shader.setMat4("view", view);
+    shader.setMat4("projection", projection);
+    shader.setInt("card_atlas", 0);
+
+    window.set_clear_color(glm::vec4(0.2, 0.2, 0.2, 1.0));
+    window.on_draw([&cards, &model, &shader](double delta_time){
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        model = glm::identity<glm::mat4>();
+        for(int i = 0; i < cards.size(); i++){
+            shader.setMat4("model", model);
+            cards[i].draw();
+            model = glm::translate(model, glm::vec3(2.5, 0, 0));
+        }
+    });
+    using namespace std::chrono_literals;
+    window.run(nullptr, 10ms, true);
+#endif
     return 0;
 }
