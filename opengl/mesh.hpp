@@ -3,6 +3,8 @@
 
 #include <glad/glad.h>
 
+#include <iostream>
+#include <cstring>
 #include <vector>
 
 //#error "mesh.hpp not implemented"
@@ -25,6 +27,35 @@ namespace rjs {
             delete[] VBOs;
             delete[] EBOs;
             return generated;
+        }
+
+        /**
+         * Returns a heap allocated array of 36 unsigned ints corresponding to the vertex indices of a
+         *     rectangular prism. The user is expected to delete[] the returned pointer.
+         * */
+        static unsigned* rect_prism_indices(){
+            unsigned* to_return = new unsigned[36];
+            unsigned vals[36] = {
+                0, 1, 2,
+                2, 3, 0,
+                
+                0, 3, 4,
+                4, 3, 7,
+
+                0, 4, 1,
+                1, 4, 5,
+
+                1, 5, 2,
+                2, 5, 6,
+
+                2, 6, 3,
+                3, 6, 7,
+
+                4, 7, 5,
+                5, 7, 6
+            };
+            std::memcpy(to_return, vals, sizeof(vals));
+            return to_return;
         }
 
         mesh(){
@@ -88,9 +119,29 @@ namespace rjs {
             return vertices;
         }
 
+        unsigned get_vao() const {
+            return VAO;
+        }
+
+        unsigned get_vbo() const {
+            return VBO;
+        }
+
+        unsigned get_ebo() const {
+            return EBO;
+        }
+
     private:
         unsigned VAO = 0, VBO = 0, EBO = 0;
         int elements = 0, vertices = 0;
     };
+}
+
+namespace std {
+    ostream& operator<<(ostream& os, const rjs::mesh& mesh){
+        os << "mesh(VAO " << mesh.get_vao() << ", VBO" << mesh.get_vbo() << ", EBO " << mesh.get_ebo() << ")\n";
+        os << "\tElements: " << mesh.element_count() << "\n\tVertices: " << mesh.vertex_count();
+        return os;
+    }
 }
 #endif

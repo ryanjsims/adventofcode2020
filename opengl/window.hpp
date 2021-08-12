@@ -62,6 +62,10 @@ namespace rjs {
             glfwDestroyWindow(m_window);
         }
 
+        void set_clear_color(glm::vec4 color){
+            glClearColor(color.r, color.g, color.b, color.a);
+        }
+
         void set_pos(int x, int y){
             glfwSetWindowPos(m_window, x, y);
         }
@@ -92,7 +96,7 @@ namespace rjs {
             glfwSetInputMode(m_window, GLFW_CURSOR, mode);
         }
         
-        void run(bool* flag=nullptr, std::chrono::milliseconds sleep_amt = std::chrono::milliseconds(10)){
+        void run(bool* flag=nullptr, std::chrono::milliseconds sleep_amt = std::chrono::milliseconds(10), bool debug=false){
             glfwShowWindow(m_window);
             using namespace std::chrono;
             time_point<high_resolution_clock> next_frametime, prev_frametime = high_resolution_clock::now();
@@ -104,6 +108,12 @@ namespace rjs {
                 glfwSwapBuffers(m_window);
                 glfwPollEvents();
                 std::this_thread::sleep_for(sleep_amt);
+                if(debug){
+                    const char* err_str = nullptr;
+                    while(glfwGetError(&err_str) != GL_NO_ERROR){
+                        std::cerr << "Error: " << err_str << std::endl;
+                    }
+                }
             }
         }
 
